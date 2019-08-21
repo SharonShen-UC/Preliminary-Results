@@ -8,5 +8,5 @@ _To reiterate_: As this working group will be prior to learning several methods,
 
 Your responsibilities include:
 
-1. Submitting your groups preliminary results
+1. Submitting your group's preliminary results (with everyone's names on the first page)
 2. Responding to at least three other groups with a couple questions, comments, feedback of any flavor prior to the deadline included in the syllabus 
