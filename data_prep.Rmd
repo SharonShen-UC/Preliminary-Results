@@ -1,0 +1,217 @@
+---
+title: "Data preparation for Clustering Heart Transplant Candidates"
+subtitle: MACS 40800 group project
+author: Will Parker, Lilly Reich
+output: 
+  html_notebook:
+    toc: yes
+    toc_depth: 2
+    toc_float: yes
+---
+
+# Introduction
+```{r packages, warning=FALSE, message=FALSE, cache = FALSE}
+#packages used
+library(haven)
+library(tidyverse)
+```
+
+Our project used the quarter 1 2019 SAF
+
+The starting point will be the `cand_thor.sas7bdat`: Initial candidate registration data. 
+
+Eventually we will incorporate justifcation form data from the `statjust_hr1a.sas7bdat` and `statjust_hr1b.sas7bdat`: Status 1A and 1B justification forms
+
+We need the `tx_hr.sas7bdat` for survival data only at this point.
+```{r read_in_SAS}
+
+# read in the SRTR SAF file
+cand_thor <- read_sas("cand_thor.sas7bdat", NULL) %>%  
+  zap_formats() %>% zap_labels()
+
+
+tx_hr <- read_sas("tx_hr.sas7bdat", NULL) %>%  
+  zap_formats() %>% zap_labels()
+
+## will add this data in later
+#statjust_hr1a <- read_sas("statjust_hr1a.sas7bdat", NULL) %>%  zap_formats() %>% zap_labels()
+
+#statjust_hr1b <- read_sas("statjust_hr1b.sas7bdat", NULL) %>% zap_formats() %>% zap_labels()
+```
+
+# Filter initial candidate listings according to inclusion/exclusion criterias
+
+Set data range and exclusion criteria
+```{r assign_data_range}
+start_year <- 2000
+end_year <- 2017
+multi <- FALSE #exclude multi-organ recipients
+peds <- FALSE # exclude candidates < 18 at the time of listing
+
+outfile <- paste0("cleaned_heart_cans_", start_year, "_", end_year, ".csv")
+```
+
+Filter candidate dataset to data range and exclusions
+```{r date_range_select, echo = TRUE, message=FALSE, warning = FALSE}
+
+init_list <- cand_thor %>% 
+  mutate(list_date = CAN_LISTING_DT, dead_date = PERS_OPTN_DEATH_DT, rem_dt = CAN_REM_DT) %>% 
+  mutate(list_year = format(list_date, "%Y")) %>%
+	filter(list_year>=start_year & list_year <=end_year & WL_ORG == "HR")  %>% 
+  mutate(status = CAN_INIT_STAT, 
+         OPO = CAN_LISTING_OPO_ID,
+         date_start = list_date)
+
+#remove peds
+if (peds == FALSE){
+	init_list <- init_list %>% filter(CAN_AGE_AT_LISTING >17)	
+	tot_adults <- nrow(init_list)
+}
+
+#remove multiorgan recipients
+if (multi == FALSE){
+
+	multi_recips <- tx_hr %>% filter(REC_TX_TY == 2 | REC_TX_TY ==4) %>% select(PX_ID,REC_TX_TY)
+  
+	n_mults <- nrow(init_list %>% filter(PX_ID %in% multi_recips$PX_ID))
+	
+	init_list <- init_list %>% filter(!PX_ID %in% multi_recips$PX_ID)
+
+	remove(multi_recips)
+}
+```
+
+
+Identify last observation date for each candidate. This will be needed for the survival analysis later
+```{r death_date_consolidation, warning=FALSE, message=FALSE}
+#link to transplant record and 
+#identify identify last observation date (death, re-transplant, or last follow-up)
+init_list <- 
+  init_list %>% left_join(tx_hr %>% select(PX_ID, TFL_LASTATUS, TFL_DEATH_DT, TFL_LAFUDATE), 
+                          by = "PX_ID") %>% 
+  mutate(
+    to_die = case_when(
+      CAN_REM_CD %in% c(8, 21)==TRUE ~ 1 ,
+      TFL_LASTATUS %in% c("D", "R") ==TRUE ~1,
+      is.na(PERS_OPTN_DEATH_DT) == FALSE ~ 1,
+      is.na(PERS_SSA_DEATH_DT) == FALSE ~ 1,
+      TRUE ~0
+  ),
+  tfl_date = TFL_LAFUDATE,
+  dead_date = case_when(
+      is.na(PERS_OPTN_DEATH_DT) == FALSE ~ PERS_OPTN_DEATH_DT,
+      TRUE ~ PERS_SSA_DEATH_DT),
+  rem_dt = CAN_REM_DT,
+  final_dt = case_when(
+    is.na(dead_date) == FALSE ~ dead_date,
+    is.na(tfl_date) == FALSE ~ tfl_date,
+    TRUE ~ rem_dt)
+)
+
+#preview data
+init_list %>% 
+  select(PX_ID, to_die, list_date, final_dt, CAN_REM_CD, 
+         rem_dt, REC_TX_DT, TFL_LASTATUS, tfl_date, 
+         PERS_OPTN_DEATH_DT, PERS_SSA_DEATH_DT, dead_date) %>% 
+  arrange(list_date)
+```
+
+
+Clean variables
+```{r select_and_clean_key_init_vars, echo = TRUE }
+init_list <- init_list %>% 
+  mutate(age = CAN_AGE_AT_LISTING,
+         female = ifelse(CAN_GENDER == "F", 1, 0),
+         race = factor(CAN_RACE),
+         race = fct_lump(race, n = 3),
+         race = fct_recode(race,
+                          "White" = "8",
+                          "Black" = "16",
+                          "Hispanic" = "2000", 
+                          "Other" = "Other"),
+         bmi = CAN_BMI,
+        simple_diagnosis = case_when(
+          CAN_DGN>999 & CAN_DGN<1007 ~ "Dilated cardiomyopathy, non-ischemic",
+          CAN_DGN == 1007 | CAN_DGN ==1200 ~ "Ischemic cardiomyopathy",
+          CAN_DGN>1048 & CAN_DGN< 1100 ~ "Restrictive cardiomyopathy",
+          TRUE ~ "Other"
+        ),
+        simple_diagnosis = factor(simple_diagnosis, 
+                           levels = c("Dilated cardiomyopathy, non-ischemic", 
+                                      "Ischemic cardiomyopathy", 
+                                      "Restrictive cardiomyopathy", 
+                                      "Other")),
+        diabetes = case_when(
+          CAN_DIAB_TY>1 & CAN_DIAB_TY<6 ~ "History of DM",
+          CAN_DIAB_TY ==1 ~ "Non-diabetic",
+          TRUE ~ "Unknown"
+        ),
+        diabetes = factor(diabetes),
+        female_gfr = if_else(CAN_GENDER == "F", 0.742, 1),
+        black_gfr = if_else(race == "Black", 1.21, 1),
+        eGFR = 175*((CAN_MOST_RECENT_CREAT)^(-1.154))*(CAN_AGE_AT_LISTING^(-0.203))*female_gfr*black_gfr,
+        functional_status = case_when(
+          CAN_FUNCTN_STAT == 1 | (CAN_FUNCTN_STAT>2069) ~"Limited Impairment, 100-70%",
+          CAN_FUNCTN_STAT ==2 | (CAN_FUNCTN_STAT>2049 & CAN_FUNCTN_STAT<2061) ~ "Moderate Impairment, 50-60%",
+          CAN_FUNCTN_STAT == 3 | (CAN_FUNCTN_STAT>2000 & CAN_FUNCTN_STAT<2041) ~ "Severe Impairment ≥ 40%%",
+          TRUE ~ "Unknown"
+        ),
+        functional_status = ifelse(is.na(functional_status), "Unknown", functional_status),
+        functional_status = factor(functional_status),
+        pcwp = CAN_PCW_MEAN,
+        body_surface_area = 0.007184*(CAN_HGT_CM)^(0.725)*CAN_WGT_KG^(0.425),
+        cardiac_index = as.numeric(CAN_CARDIAC_OUTPUT/body_surface_area),
+        blood_type = factor(
+           case_when(
+             CAN_ABO %in% c("A", "A1", "A2") ~ "A",
+             CAN_ABO %in% c("A1B", "A2B") ~ "AB",
+             TRUE ~ CAN_ABO)
+           ),
+        payor = case_when(
+          CAN_PRIMARY_PAY %in% c(3,4,13) ~ "Medicare",
+          CAN_PRIMARY_PAY ==2 ~ "Medicaid",
+          CAN_PRIMARY_PAY == 1 ~ "Private",
+          TRUE ~ "Other"
+        ),
+        ecmo = case_when(
+          CAN_ECMO ==1 ~ 1,
+          TRUE ~ 0),
+        iabp = case_when(
+          CAN_IABP ==1 ~1,
+          TRUE ~ 0),
+        lvad = case_when(
+          CAN_VAD_TY == 2~1,
+          TRUE ~ 0),
+        other_mcs = case_when(
+          CAN_VAD_TY >2~1,
+          TRUE ~ 0),
+        high_dose_inotropes = case_when(
+          CAN_IV_INOTROP == 1 & CAN_INIT_STAT == 2010~1,
+          TRUE ~ 0),
+        low_dose_inotropes = case_when(
+          CAN_IV_INOTROP ==1 & CAN_INIT_STAT == 2020~1,
+          TRUE ~ 0),
+        status = case_when(
+          CAN_INIT_STAT  == 2010 ~ "Status 1A",
+          CAN_INIT_STAT  == 2020 ~ "Status 1B",
+          CAN_INIT_STAT  == 2030 ~ "Status 2",
+          CAN_INIT_STAT  == 2999 ~ "Inactive"
+        ),
+        status = factor(status)
+  ) %>%
+  select(PX_ID, status, #patient ID and listing status
+         age, female, race, #basic demographics
+         bmi, blood_type, simple_diagnosis, eGFR, diabetes, functional_status, #diagnosis and medical comorbidities, some factor variables some continuous
+         cardiac_index, pcwp, #hemodynamics
+         payor, #payor
+         ecmo, iabp, lvad, other_mcs, high_dose_inotropes, low_dose_inotropes #treatments- hot coded
+         )
+
+skimr::skim(init_list)
+```
+
+```{r write_out_clean_file}
+write_csv(init_list, outfile)
+```
+
+
