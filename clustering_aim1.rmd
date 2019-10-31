@@ -1,0 +1,30 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r packages, warning=FALSE, message=FALSE, cache = FALSE}
+#packages used
+library(haven)
+library(tidyverse)
+
+library(StatMatch)
+```
+
+
+```{r}
+to_cluster <- read.csv("cleaned_heart_cans_2000_2017.csv")
+```
+
+```{r}
+to_cluster %>%
+  filter(row_number() < 1000) %>%
+  select(age, blood_type, bmi) %>%
+  StatMatch::gower.dist()
+```
+
+
