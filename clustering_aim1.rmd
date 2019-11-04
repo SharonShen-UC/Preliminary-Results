@@ -1,6 +1,8 @@
 ---
 title: "R Notebook"
 output: html_notebook
+editor_options: 
+  chunk_output_type: inline
 ---
 
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
@@ -17,14 +19,83 @@ library(StatMatch)
 
 
 ```{r}
-to_cluster <- read.csv("cleaned_heart_cans_2000_2017.csv")
+#to_cluster <- read.csv("cleaned_heart_cans_2000_2017.csv")
+to_cluster <- read.csv(file.choose())
 ```
 
 ```{r}
-to_cluster %>%
-  filter(row_number() < 1000) %>%
-  select(age, blood_type, bmi) %>%
-  StatMatch::gower.dist()
+#df <- to_cluster %>%
+#  filter(row_number() < 10000) %>%
+#  select(age, blood_type, bmi) %>%
+#  StatMatch::gower.dist()
+library(cluster)
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(Rtsne)
+
+#' Compute Gower distance
+df <- to_cluster
+
+df <- sample_n(df,1000)
+#df <- to_cluster
+
+#df <- df[c("age","blood_type","bmi")]
+
+```
+
+```{r}
+gower_dist <- daisy(df, metric = "gower")
+
+gower_mat <- as.matrix(gower_dist)
+
+```
+
+```{r}
+#' Print most similar clients
+df[which(gower_mat == min(gower_mat[gower_mat != min(gower_mat)]), arr.ind = TRUE)[1, ], ]
+
+#' Print most dissimilar clients
+df[which(gower_mat == max(gower_mat[gower_mat != max(gower_mat)]), arr.ind = TRUE)[1, ], ]
+
+```
+```{r}
+sil_width <- c(NA)
+for(i in 2:15){  
+  pam_fit <- pam(gower_dist, diss = TRUE, k = i)  
+  sil_width[i] <- pam_fit$silinfo$avg.width  
+}
+plot(1:15, sil_width,
+     xlab = "Number of clusters",
+     ylab = "Silhouette Width")
+lines(1:15, sil_width)
 ```
 
 
+
+```{r}
+k <- 8
+pam_fit <- pam(gower_dist, diss = TRUE, k)
+pam_results <- df %>%
+  mutate(cluster = pam_fit$clustering) %>%
+  group_by(cluster) %>%
+  do(the_summary = summary(.))
+pam_results$the_summary
+```
+
+```{r}
+tsne_obj <- Rtsne(gower_dist, is_distance = TRUE)
+tsne_data <- tsne_obj$Y %>%
+  data.frame() %>%
+  setNames(c("X", "Y")) %>%
+  mutate(cluster = factor(pam_fit$clustering))
+ggplot(aes(x = X, y = Y), data = tsne_data) +
+  geom_point(aes(color = cluster))
+```
+
+```{r}
+df_data <- df %>%
+  mutate(cluster = factor(pam_fit$clustering))
+ggplot(aes(x = bmi, y = eGFR), data = df_data) +
+  geom_point(aes(color = cluster))
+```
