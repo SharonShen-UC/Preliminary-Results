@@ -1,7 +1,0 @@
-*
-
-!.gitignore
-
-!*.Rmd
-!*prelim_results.pdf
-.Rproj.user
