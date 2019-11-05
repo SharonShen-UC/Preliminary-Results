@@ -1,8 +1,11 @@
 ---
 title: "Clustering Adult Heart Transplant Candidates"
+author: "Will Parker, Lilly Reich"
 subtitle: MACS 40800 group project
-author: Will Parker, Lilly Reich
-output: 
+output:
+  word_document:
+    toc: yes
+    toc_depth: '2'
   html_notebook:
     toc: yes
     toc_depth: 2
@@ -11,6 +14,12 @@ output:
 
 #Overview: In the analysis, we computed a gower's distance and PAM clustering method to determine robustness for an adult heart transplant dataset. The purpose of utilizing PAM as a "k-finding" method is to seek variation (pairwise minimization dissimiliarties) for each clinical variable. 
 
+```{r global_options, include = FALSE}
+library(knitr)
+
+#set global options for this rmarkdown document
+opts_chunk$set(cache = TRUE, warning=FALSE, message=FALSE, tidy.opts=list(width.cutoff=60), echo = FALSE)
+```
 
 # Packages used
 ```{r packages, warning=FALSE, message=FALSE}
@@ -27,7 +36,7 @@ library(seriation)
 
 ## Load data in 
 ```{r main_dataset}
-to_cluster <- read.csv(file.choose())
+to_cluster <- read.csv("cleaned_heart_cans_2000_2017.csv")
 ```
 
 
@@ -83,9 +92,11 @@ df[which(gower_mat == max(gower_mat[gower_mat != max(gower_mat)]), arr.ind = TRU
 Using Gower's distance matrix
 ```{r ODI}
 dissplot(gower_dist_object)
+
+ggsave("Figure_1_ODI.pdf")
 ```
 
-From the ODI plot, there does not appear to be any clusterability.
+From the ODI plot, there seem to be at least 3 clusters
 
 
 # K finding for PAM clustering
@@ -103,6 +114,8 @@ plot(1:15, sil_width,
      xlab = "Number of clusters",
      ylab = "Silhouette Width")
 lines(1:15, sil_width)
+
+ggsave("Figure_2_average_silhouette_by_cluster_number.pdf")
 ```
 
 Looks like k = 3 would be reasonable
@@ -139,33 +152,36 @@ pam_results <- df %>%
 pam_results$the_summary
 ```
 
-## Means of continuous variables by cluster
-```{r means_by_cluster}
-df %>%
-  mutate(cluster = pam_fit$clustering) %>%
-  group_by(cluster) %>%
-  summarise_if(is.numeric, mean)
-```
+## Table 1: Means of continuous variables by cluster
+
 
 Interestingly, cluster 2 has lower cardiac index and higher pulmonary capillary wedge pressure, suggesting worse cardiac physiology.
+```{r means_by_cluster}
+knitr::kable(df %>%
+  mutate(cluster = pam_fit$clustering) %>%
+  group_by(cluster) %>%
+  summarise_if(is.numeric, mean))
+```
 
-## counts of categorical variables by cluster
 
-Trying to figure out how to do this for all factor variables with dpylr, maybe a for loop is easiest
+
+
+
+## Table 2: Distribution of functional status by cluster
+
+Functional status is also dependent on cluster, with cluster 3 has the worse functional status (severe impairment)
 ```{r count_by_cluster}
-
 total_obs <- df %>% nrow()
 
-df %>%
+knitr::kable(df %>%
   mutate(cluster = pam_fit$clustering) %>%
   group_by(cluster) %>%
   count(functional_status) %>%
   mutate(total = sum(n),
          pct = paste0(round(100*n/total), "%")) %>%
   select(functional_status, cluster, pct) %>%
-  pivot_wider(names_from = "functional_status", values_from = "pct")
+  pivot_wider(names_from = "functional_status", values_from = "pct"))
 ```
-Functional status is also dependent on cluster, with cluster 3 has the worse functional status (severe impairment)
 
 # Dimension-reduction
 
@@ -193,16 +209,16 @@ ggplot(aes(x = age, y = eGFR), data = df_data) +
 Picking two continuous variables, `age` and `eGFR` there doesn't seem to be any obvious relationship between the clusters and the 
 
 
-# Listing Status and clusters 
+# Table 3:Listing Status and clusters 
 ```{r status_cluster}
 
-df_data %>%
+knitr::kable(df_data %>%
   group_by(status) %>%
   count(cluster) %>% 
   mutate(total = sum(n),
          pct = paste0(round(100*n/total), "%")) %>%
   select(status, cluster, pct) %>%
-  pivot_wider(names_from = "status", values_from = "pct")
+  pivot_wider(names_from = "status", values_from = "pct"))
 ```
 Cluster 3 has a higher percentage of Status 1A candidates, however all Status levels are represented in each cluster.
 
