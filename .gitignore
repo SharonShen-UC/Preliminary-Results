@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 
 *
@@ -5,3 +6,10 @@
 !.gitignore
 
 !*.Rmd
+=======
+*
+
+!.gitignore
+!*.Rmd
+.Rproj.user
+>>>>>>> 7a89a0c5bdea7bedb63c094d8d233b9b10d8b52d

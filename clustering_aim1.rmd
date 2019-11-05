@@ -9,11 +9,15 @@ output:
     toc_float: yes
 ---
 
+#Overview: In the analysis, we computed a gower's distance and PAM clustering method to determine robustness for an adult heart transplant dataset. The purpose of utilizing PAM as a "k-finding" method is to seek variation (pairwise minimization dissimiliarties) for each clinical variable. 
+
+
 # Packages used
 ```{r packages, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(cluster)
 library(Rtsne)
+library(seriation)
 ```
 
 
@@ -40,7 +44,6 @@ gower_dist <- daisy(df %>%
                       select(-PX_ID, -status), metric = "gower")
 
 gower_mat <- as.matrix(gower_dist)
-
 ```
 
 ## most similar candidates
@@ -53,6 +56,21 @@ These two women are the same age and identical on almost all covariates, except 
 ```{r most_dis}
 df[which(gower_mat == max(gower_mat[gower_mat != max(gower_mat)]), arr.ind = TRUE)[1, ], ]
 ```
+
+
+#Diagnose Clusterability
+
+## ODI plot
+
+Using Gower's distance matrix
+```{r ODI}
+dissplot(gower_dist)
+
+gower_mat
+```
+
+
+
 
 # K finding for PAM clustering
 
@@ -73,6 +91,19 @@ lines(1:15, sil_width)
 
 Looks like k = 2 or k = 5 would be reasonable. Doesn't look like the mean varies too much though on the silhoutte "scale" (from 0.085 to 0.1) 
 
+
+## Elbow Method
+```{r elbow}
+k.max <- 15
+df <- df_data
+wss <- sapply(1:k.max, 
+              function(k){kmeans(df, k, nstart=50,iter.max = 15 )$tot.withinss})
+wss
+plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+```
 
 # Cluster results
 
@@ -165,3 +196,8 @@ Looks like the clustering doesn't line up well with the candidate's inital Statu
 ## Importance of each clinical variable 
 
 In our choice of distance metric, we assign equal weight to each clinical variable. Does this make sense? Some clinical variables are clearly more important than others.
+
+
+
+##After we continue to diagnose clusterability in the analysis, we will likely incorporate 
+##a GMM (Gaussian Mixture Model). 
