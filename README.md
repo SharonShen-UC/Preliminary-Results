@@ -10,3 +10,19 @@ Your responsibilities include:
 
 1. Submitting your group's preliminary results (with everyone's names on the first page)
 2. **Responding to at least *two* other projects** with a couple questions, comments, feedback of any flavor prior to the deadline included in the syllabus 
+
+
+##Workshop Presentation Days
+
+* Day 1:
+	1. 
+	2.
+	3.
+	4.
+
+
+* Day 2:
+	1. 
+	2. 
+	3. 
+	4. 
