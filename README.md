@@ -14,14 +14,14 @@ Your responsibilities include:
 
 ## Workshop Presentation Schedule
 
-* Day 1:
+* **Day 1 (Tuesday, 11/12)**:
 	1. Arroyo, Kim, Tong, & Pandian
 	2. Li, Pandit, & Shelton
 	3. Glazer & Jensen
 	4. Collins & Tyagie
 
 
-* Day 2:
+* **Day 2 (Thursday, 11/14)**:
 	1. He, Lau, & Tang
 	2. Cao, Pacheco, Shen, & Shi
 	3. Reich & Parker
