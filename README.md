@@ -23,6 +23,6 @@ Your responsibilities include:
 
 * Day 2:
 	1. He, Lau, & Tang
-	2. Preliminary Results.pdf
+	2. Cao, Pacheco, Shen, & Shi
 	3. Reich & Parker
 	4. Preliminary results_final.pdf
