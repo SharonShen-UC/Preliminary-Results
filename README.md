@@ -15,14 +15,14 @@ Your responsibilities include:
 ## Workshop Presentation Schedule
 
 * Day 1:
-	1. Arroyo, Kim, Tong, & Pandian - Preliminary Results.pdf
-	2. li-pandit-shelton-prelim-results.pdf
-	3. Glazer_Jensen_Preliminary_Results.pdf
-	4. prelim_write-up.pdf
+	1. Arroyo, Kim, Tong, & Pandian
+	2. Li, Pandit, & Shelton
+	3. Glazer & Jensen
+	4. Collins & Tyagie
 
 
 * Day 2:
-	1. Project Preliminary Results_He_Lau_Tang.pdf
+	1. He, Lau, & Tang
 	2. Preliminary Results.pdf
-	3. Reich_Parker_prelim_results.pdf
+	3. Reich & Parker
 	4. Preliminary results_final.pdf
