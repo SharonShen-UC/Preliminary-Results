@@ -15,10 +15,10 @@ Your responsibilities include:
 ## Workshop Presentation Days
 
 * Day 1:
-	* 1. 
-	* 2.
-	* 3.
-	* 4.
+	1. 
+	2.
+	3.
+	4.
 
 
 * Day 2:
