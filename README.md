@@ -8,8 +8,9 @@ _To reiterate_: As this working group will be prior to learning several methods,
 
 Your responsibilities include:
 
-1. Submitting your group's preliminary results (with everyone's names on the first page)
-2. **Responding to at least *two* other projects** with a couple questions, comments, feedback of any flavor prior to the deadline included in the syllabus 
+1. Submitting your group's preliminary results (single submission per group)
+2. A _brief_ 5-7 minute project summary on your (randomly) assigned presentation day
+3. **Responding to at least *two* other projects** with a couple questions, comments, feedback of any flavor prior to the deadline included in the syllabus 
 
 
 ## Workshop Presentation Schedule
