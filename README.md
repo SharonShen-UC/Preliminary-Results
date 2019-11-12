@@ -17,7 +17,7 @@ Your responsibilities include:
 
 * **Day 1 (Tuesday, 11/12)**:
 	1. He, Lau, & Tang
-	2. Li, Pandit, & Shelton
+	2. Liu, Pandit, & Shelton
 	3. Glazer & Jensen
 	4. Collins & Tyagie
 
